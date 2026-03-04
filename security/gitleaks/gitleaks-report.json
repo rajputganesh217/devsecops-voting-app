@@ -1,1 +1,22 @@
-[]
+[
+ {
+  "Description": "GitHub Personal Access Token",
+  "StartLine": 1,
+  "EndLine": 1,
+  "StartColumn": 1,
+  "EndColumn": 40,
+  "Match": "ghp_1234567890abcdefghijklmnopqrstuvwxyz",
+  "Secret": "ghp_1234567890abcdefghijklmnopqrstuvwxyz",
+  "File": "demo-secret.txt",
+  "SymlinkFile": "",
+  "Commit": "42f815a7ba7f44e03f63b613ef4e55e52fa313af",
+  "Entropy": 5.171928,
+  "Author": "Ganesh",
+  "Email": "ganesh217@gmail.com",
+  "Date": "2026-03-04T20:29:40Z",
+  "Message": "Add fake GitHub token for Gitleaks demo",
+  "Tags": [],
+  "RuleID": "github-pat",
+  "Fingerprint": "42f815a7ba7f44e03f63b613ef4e55e52fa313af:demo-secret.txt:github-pat:1"
+ }
+]
