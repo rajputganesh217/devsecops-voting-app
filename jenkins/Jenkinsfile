@@ -11,7 +11,8 @@ pipeline {
  stages {
 
  stage('Checkout Code') {
-  steps {
+   steps {
+  git branch: 'main',
    git credentialsId: 'git-creds',
        url: 'https://github.com/rajputganesh217/devsecops-voting-app.git'
   }
