@@ -1,4 +1,4 @@
-resource "azurerm_kubernetes_cluster" "aks" {
+/* resource "azurerm_kubernetes_cluster" "aks" {
 
   name                = var.aks_cluster_name
   location            = azurerm_resource_group.rg.location
@@ -25,3 +25,4 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
 }
+*/

@@ -1,6 +1,6 @@
 variable "location" {
   description = "Azure region"
-  default     = "Central India"
+  default     = "EastUS"
 }
 
 variable "resource_group_name" {
@@ -19,9 +19,9 @@ variable "acr_name" {
 }
 
 variable "node_count" {
-  default = 2
+  default = 1
 }
 
 variable "node_vm_size" {
-  default = "Standard_B2s"
+  default = "Standard_D2s_v3"
 }
