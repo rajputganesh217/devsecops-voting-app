@@ -1,4 +1,49 @@
+version: "3.8"
+
 services:
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+
+  db:
+    image: postgres:9.4
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  vote:
+    image: devsecopsacr12345.azurecr.io/voting-app:latest
+    container_name: voting-app
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+    restart: always
+
+  worker:
+    image: devsecopsacr12345.azurecr.io/worker-app:latest
+    container_name: worker-app
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  result:
+    image: devsecopsacr12345.azurecr.io/result-app:latest
+    container_name: result-app
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  postgres-data:services:
   redis:
     image: redis
 

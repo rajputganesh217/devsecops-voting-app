@@ -1,0 +1,205 @@
+pipeline {
+ agent any
+
+ environment {
+  ACR_NAME = "devsecopsacr12345.azurecr.io"
+  IMAGE_VOTE = "voting-app"
+  IMAGE_WORKER = "worker-app"
+  IMAGE_RESULT = "result-app"
+ }
+
+ stages {
+
+ stage('Checkout Code') {
+  steps {
+   git credentialsId: 'git-creds',
+       url: 'https://github.com/rajputganesh217/devsecops-voting-app.git'
+  }
+ }
+
+ stage('Prepare Security Reports Folder') {
+  steps {
+   sh '''
+   mkdir -p security/trivy
+   mkdir -p security/owasp
+   '''
+  }
+ }
+
+ stage('SonarQube Scan') {
+
+  steps {
+
+   withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
+    sh '''
+    sonar-scanner \
+      -Dsonar.projectKey=devsecops-voting-app \
+      -Dsonar.sources=. \
+      -Dsonar.login=$SONAR_TOKEN \
+      > security/sonar-report.txt
+    '''
+
+   }
+
+  }
+
+ }
+
+ stage('OWASP Dependency Scan') {
+  steps {
+
+   sh '''
+   dependency-check.sh \
+     --project devsecops-voting-app \
+     --scan . \
+     --format HTML \
+     --out security/owasp
+   '''
+
+  }
+ }
+
+ stage('Build Docker Images') {
+  steps {
+
+   sh '''
+
+   docker build -t $IMAGE_VOTE ./app/vote
+   docker build -t $IMAGE_WORKER ./app/worker
+   docker build -t $IMAGE_RESULT ./app/result
+
+   '''
+
+  }
+ }
+
+ stage('Trivy Image Scan') {
+
+  steps {
+
+   sh '''
+
+   trivy image $IMAGE_VOTE \
+   > security/trivy/vote-report.txt
+
+   trivy image $IMAGE_WORKER \
+   > security/trivy/worker-report.txt
+
+   trivy image $IMAGE_RESULT \
+   > security/trivy/result-report.txt
+
+   '''
+
+  }
+
+ }
+
+ stage('Azure Login') {
+
+  steps {
+
+   withCredentials([
+    usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'AZURE_CLIENT_ID', passwordVariable: 'AZURE_CLIENT_SECRET'),
+    string(credentialsId: 'tenant-id', variable: 'TENANT_ID'),
+    string(credentialsId: 'azure-subscription', variable: 'SUB_ID')
+   ]) {
+
+    sh '''
+
+    az login --service-principal \
+      -u $AZURE_CLIENT_ID \
+      -p $AZURE_CLIENT_SECRET \
+      --tenant $TENANT_ID
+
+    az account set --subscription $SUB_ID
+
+    '''
+
+   }
+
+  }
+
+ }
+
+ stage('Login to ACR') {
+
+  steps {
+
+   sh '''
+   az acr login --name devsecopsacr12345
+   '''
+
+  }
+
+ }
+
+ stage('Tag Images') {
+
+  steps {
+
+   sh '''
+
+   docker tag $IMAGE_VOTE $ACR_NAME/$IMAGE_VOTE:latest
+   docker tag $IMAGE_WORKER $ACR_NAME/$IMAGE_WORKER:latest
+   docker tag $IMAGE_RESULT $ACR_NAME/$IMAGE_RESULT:latest
+
+   '''
+
+  }
+
+ }
+
+ stage('Push Images to ACR') {
+
+  steps {
+
+   sh '''
+
+   docker push $ACR_NAME/$IMAGE_VOTE:latest
+   docker push $ACR_NAME/$IMAGE_WORKER:latest
+   docker push $ACR_NAME/$IMAGE_RESULT:latest
+
+   '''
+
+  }
+
+ }
+
+ stage('Archive Security Reports') {
+
+  steps {
+
+   archiveArtifacts artifacts: 'security/**/*'
+
+  }
+
+ }
+
+ stage('Deploy Application') {
+
+  steps {
+
+   withCredentials([string(credentialsId: 'postgres-pass', variable: 'POSTGRES_PASSWORD')]) {
+
+    sh '''
+
+    cd app
+
+    docker compose down || true
+
+    export POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+
+    docker compose up -d
+
+    '''
+
+   }
+
+  }
+
+ }
+
+ }
+
+}
